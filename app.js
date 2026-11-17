@@ -10,14 +10,14 @@ async function init(){
  if(!cfg?.supabaseUrl||!cfg?.supabaseKey){say('尚未连接后端，当前不能登录或提交。请按仓库 README 创建 Supabase 项目、执行 schema.sql 并填写 config.js。');$('loginForm').querySelector('button').disabled=true;return}
  db=createClient(cfg.supabaseUrl,cfg.supabaseKey);
  const session=check(await db.auth.getSession());user=session.session?.user;
- if(!user){say('通过邮箱中的登录链接验证身份后，即可提交阅读记录。');return}
+ if(!user){say('请输入管理员创建的邮箱账号和密码登录。');return}
  $('login').hidden=true;$('workspace').hidden=false;$('identity').textContent=user.email;
  admin=check(await db.rpc('is_admin'));reader=check(await db.rpc('can_read_all'));
  $('adminTab').hidden=!admin;$('scope').textContent=reader?'你可以查看全部阅读记录。':'你可以查看自己的阅读记录；查看其他记录需要管理员授权。';
  say('已登录。'+(admin?'当前身份：管理员。':reader?'当前身份：授权查看者。':'当前身份：提交者。'));
  await loadRecords();if(admin)await loadGrants();
 }
-$('loginForm').onsubmit=e=>{e.preventDefault();action(async()=>{const b=e.submitter;b.disabled=true;try{check(await db.auth.signInWithOtp({email:$('email').value.trim(),options:{emailRedirectTo:location.origin+location.pathname}}));say('登录链接已发送，请检查邮箱（包括垃圾邮件），点击链接返回本站。')}finally{b.disabled=false}})};
+$('loginForm').onsubmit=e=>{e.preventDefault();action(async()=>{const b=e.submitter;b.disabled=true;try{check(await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value}));location.reload()}finally{b.disabled=false}})};
 $('logout').onclick=()=>action(async()=>{check(await db.auth.signOut());location.reload()});
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 $('images').onchange=()=>{urls.forEach(URL.revokeObjectURL);urls=[];$('previews').replaceChildren();for(const f of $('images').files){if(!['image/png','image/jpeg','image/webp'].includes(f.type))continue;const img=node('img');img.src=URL.createObjectURL(f);urls.push(img.src);img.alt=f.name;$('previews').append(img)}};
